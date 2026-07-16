@@ -2,7 +2,7 @@
 
 Application web : un agent IA **expert en construction dans tous les corps de métier**, propulsé par l'API Anthropic (Claude), qui s'adapte automatiquement au **code de construction de votre province canadienne ou de votre état américain**.
 
-**🌐 En production : https://expert-construction-ia.vercel.app** (ajoutez `ANTHROPIC_API_KEY` dans Vercel → Settings → Environment Variables, puis redéployez, pour activer l'agent)
+**🌐 En production : https://expert-construction-dusky.vercel.app** (projet Vercel `expert-construction`, connecté à ce dépôt GitHub — chaque fusion dans `main` déclenche un déploiement automatique; la clé `ANTHROPIC_API_KEY` est configurée dans Settings → Environment Variables)
 
 ## Fonctionnalités
 
