@@ -44,12 +44,23 @@ Ouvrez ensuite http://localhost:3000
 
 La clé API reste **côté serveur** — elle n'est jamais exposée au navigateur.
 
+## Déploiement sur Vercel
+
+Le projet est prêt pour Vercel : `public/` est servi en statique et `api/index.js` expose l'app Express comme fonction serverless (streaming supporté, `maxDuration` 300 s).
+
+1. Importez le dépôt dans Vercel (ou `vercel deploy`)
+2. Dans **Settings → Environment Variables**, ajoutez `ANTHROPIC_API_KEY`
+3. Redéployez — c'est tout
+
 ## Architecture
 
 ```
-server.js          Serveur Express : relaie vers l'API Anthropic (streaming SSE),
+app.js             Application Express : relaie vers l'API Anthropic (streaming SSE),
                    prompt système "expert construction" + contexte de juridiction,
                    outil web_search côté serveur, gestion pause_turn/erreurs
+server.js          Démarrage local (node server.js)
+api/index.js       Point d'entrée serverless Vercel
+vercel.json        Config Vercel (statique + rewrites /api/* + maxDuration)
 public/index.html  Interface (chat, sélecteur pays/province/ville, boutons voix)
 public/app.js      Logique client : streaming, Web Speech API (STT + TTS),
                    pièces jointes (images → vision, PDF → document), historique
