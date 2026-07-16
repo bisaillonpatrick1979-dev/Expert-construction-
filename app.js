@@ -193,7 +193,18 @@ app.post(["/api/chat", "/chat"], async (req, res) => {
         continue;
       }
       if (final.stop_reason === "refusal") {
-        send({ type: "error", text: "La demande a été refusée pour des raisons de sécurité. Reformulez votre question." });
+        // Journaliser la cause pour diagnostic (catégorie du filtre de sécurité Anthropic)
+        const details = final.stop_details || {};
+        console.error("Refus de l'API Anthropic:", JSON.stringify({
+          category: details.category || null,
+          explanation: details.explanation || null,
+        }));
+        const refusalMessages = {
+          fr: "Les filtres de sécurité d'Anthropic ont décliné cette demande (parfois un faux positif). Reformulez votre question autrement, ou démarrez une nouvelle question — ce refus n'affecte pas la suite de la conversation.",
+          en: "Anthropic's safety filters declined this request (sometimes a false positive). Please rephrase your question — this refusal does not affect the rest of the conversation.",
+          es: "Los filtros de seguridad de Anthropic rechazaron esta solicitud (a veces un falso positivo). Reformule su pregunta — este rechazo no afecta al resto de la conversación.",
+        };
+        send({ type: "error", text: refusalMessages[language] || refusalMessages.fr });
       }
       break;
     }
