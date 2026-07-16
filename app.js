@@ -193,6 +193,9 @@ app.post(["/api/chat", "/chat"], async (req, res) => {
       msg = "Limite de débit atteinte — réessayez dans quelques instants.";
     } else if (err instanceof Anthropic.APIError) {
       msg = `Erreur API (${err.status}) : ${err.message}`;
+    } else if (!process.env.ANTHROPIC_API_KEY) {
+      // new Anthropic() sans clé lance une AnthropicError de base à la première requête
+      msg = "Clé API Anthropic manquante — définissez la variable ANTHROPIC_API_KEY (fichier .env en local, ou Settings → Environment Variables sur Vercel).";
     }
     send({ type: "error", text: msg });
     send({ type: "done" });
