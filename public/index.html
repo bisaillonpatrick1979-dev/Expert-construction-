@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expert Construction IA</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon">🏗️</span>
+      <div>
+        <h1>Expert Construction IA</h1>
+        <p class="tagline">Tous les métiers · Codes adaptés à votre province ou état</p>
+      </div>
+    </div>
+    <div class="location-bar">
+      <select id="country" title="Pays">
+        <option value="Canada">🇨🇦 Canada</option>
+        <option value="États-Unis">🇺🇸 États-Unis</option>
+      </select>
+      <select id="region" title="Province ou état"></select>
+      <input id="city" type="text" placeholder="Ville (ex. : Sainte-Marie)" />
+      <button id="ttsToggle" class="toggle" title="Réponses vocales activées/désactivées" aria-pressed="false">🔇 Voix</button>
+    </div>
+  </header>
+
+  <main id="chat" class="chat" aria-live="polite">
+    <div class="message assistant">
+      <div class="bubble">
+        <p><strong>Bonjour! 👷</strong> Je suis votre expert en construction — charpenterie, planchers, gypse, toiture, revêtement extérieur, plomberie, électricité, gaz, CVC, fondations… tous les métiers.</p>
+        <p>Je m'adapte au code de construction de <em>votre</em> province ou état (sélectionnez-le en haut). Vous pouvez :</p>
+        <ul>
+          <li>🎤 me parler (bouton micro)</li>
+          <li>📷 m'envoyer des photos d'un problème ou des plans PDF</li>
+          <li>🛒 me demander où trouver les matériaux au meilleur prix près de chez vous</li>
+        </ul>
+        <p>Décrivez votre projet ou votre problème!</p>
+      </div>
+    </div>
+  </main>
+
+  <div id="attachments" class="attachments"></div>
+
+  <footer class="composer">
+    <button id="attachBtn" class="icon-btn" title="Joindre photos ou fichiers PDF">📎</button>
+    <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" multiple hidden />
+    <button id="micBtn" class="icon-btn" title="Dicter votre question (reconnaissance vocale)">🎤</button>
+    <textarea id="input" rows="1" placeholder="Décrivez votre problème de construction… (Entrée pour envoyer)"></textarea>
+    <button id="sendBtn" class="send-btn" title="Envoyer">➤</button>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
