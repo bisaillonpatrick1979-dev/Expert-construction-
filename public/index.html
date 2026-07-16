@@ -13,10 +13,15 @@
       <span class="brand-icon">🏗️</span>
       <div>
         <h1>Expert Construction IA</h1>
-        <p class="tagline">Tous les métiers · Codes adaptés à votre province ou état</p>
+        <p class="tagline" id="tagline">Tous les métiers · Codes adaptés à votre province ou état</p>
       </div>
     </div>
     <div class="location-bar">
+      <select id="lang" title="Langue / Language / Idioma">
+        <option value="fr">Français</option>
+        <option value="en">English</option>
+        <option value="es">Español</option>
+      </select>
       <select id="country" title="Pays">
         <option value="Canada">🇨🇦 Canada</option>
         <option value="États-Unis">🇺🇸 États-Unis</option>
@@ -29,7 +34,7 @@
 
   <main id="chat" class="chat" aria-live="polite">
     <div class="message assistant">
-      <div class="bubble">
+      <div class="bubble" id="welcome">
         <p><strong>Bonjour! 👷</strong> Je suis votre expert en construction — charpenterie, planchers, gypse, toiture, revêtement extérieur, plomberie, électricité, gaz, CVC, fondations… tous les métiers.</p>
         <p>Je m'adapte au code de construction de <em>votre</em> province ou état (sélectionnez-le en haut). Vous pouvez :</p>
         <ul>

@@ -26,6 +26,74 @@
     ],
   };
 
+  /* ---------------- Langues (interface + IA + voix) ---------------- */
+
+  const LANGS = {
+    fr: {
+      speech: "fr-CA",
+      tagline: "Tous les métiers · Codes adaptés à votre province ou état",
+      cityPlaceholder: "Ville (ex. : Sainte-Marie)",
+      inputPlaceholder: "Décrivez votre problème de construction… (Entrée pour envoyer)",
+      voiceOn: "🔊 Voix",
+      voiceOff: "🔇 Voix",
+      analyzeFiles: "Analyse les fichiers joints et identifie les problèmes.",
+      micUnsupported: "La reconnaissance vocale n'est pas supportée par ce navigateur. Utilisez Chrome ou Edge.",
+      micDenied: "Accès au micro refusé. Autorisez le micro dans votre navigateur.",
+      serverUnreachable: "Impossible de contacter le serveur : ",
+      codeBlock: " (bloc de code) ",
+      welcome: `<p><strong>Bonjour! 👷</strong> Je suis votre expert en construction — charpenterie, planchers, gypse, toiture, revêtement extérieur, plomberie, électricité, gaz, CVC, fondations… tous les métiers.</p>
+        <p>Je m'adapte au code de construction de <em>votre</em> province ou état (sélectionnez-le en haut). Vous pouvez :</p>
+        <ul>
+          <li>🎤 me parler (bouton micro)</li>
+          <li>📷 m'envoyer des photos d'un problème ou des plans PDF</li>
+          <li>🛒 me demander où trouver les matériaux au meilleur prix près de chez vous</li>
+        </ul>
+        <p>Décrivez votre projet ou votre problème!</p>`,
+    },
+    en: {
+      speech: "en-US",
+      tagline: "Every trade · Codes adapted to your province or state",
+      cityPlaceholder: "City (e.g., Edmonton)",
+      inputPlaceholder: "Describe your construction problem… (Enter to send)",
+      voiceOn: "🔊 Voice",
+      voiceOff: "🔇 Voice",
+      analyzeFiles: "Analyze the attached files and identify the problems.",
+      micUnsupported: "Speech recognition is not supported by this browser. Use Chrome or Edge.",
+      micDenied: "Microphone access denied. Allow the microphone in your browser.",
+      serverUnreachable: "Unable to reach the server: ",
+      codeBlock: " (code block) ",
+      welcome: `<p><strong>Hello! 👷</strong> I'm your construction expert — framing, flooring, drywall, roofing, siding, plumbing, electrical, gas, HVAC, foundations… every trade.</p>
+        <p>I adapt to the building code of <em>your</em> province or state (select it above). You can:</p>
+        <ul>
+          <li>🎤 talk to me (mic button)</li>
+          <li>📷 send me photos of a problem or PDF plans</li>
+          <li>🛒 ask me where to find materials at the best price near you</li>
+        </ul>
+        <p>Describe your project or your problem!</p>`,
+    },
+    es: {
+      speech: "es-ES",
+      tagline: "Todos los oficios · Códigos adaptados a su provincia o estado",
+      cityPlaceholder: "Ciudad (ej.: Miami)",
+      inputPlaceholder: "Describa su problema de construcción… (Enter para enviar)",
+      voiceOn: "🔊 Voz",
+      voiceOff: "🔇 Voz",
+      analyzeFiles: "Analiza los archivos adjuntos e identifica los problemas.",
+      micUnsupported: "El reconocimiento de voz no es compatible con este navegador. Use Chrome o Edge.",
+      micDenied: "Acceso al micrófono denegado. Permita el micrófono en su navegador.",
+      serverUnreachable: "No se puede contactar con el servidor: ",
+      codeBlock: " (bloque de código) ",
+      welcome: `<p><strong>¡Hola! 👷</strong> Soy su experto en construcción — carpintería, pisos, drywall, techos, revestimiento, plomería, electricidad, gas, HVAC, cimientos… todos los oficios.</p>
+        <p>Me adapto al código de construcción de <em>su</em> provincia o estado (selecciónelo arriba). Usted puede:</p>
+        <ul>
+          <li>🎤 hablarme (botón del micrófono)</li>
+          <li>📷 enviarme fotos de un problema o planos PDF</li>
+          <li>🛒 preguntarme dónde encontrar materiales al mejor precio cerca de usted</li>
+        </ul>
+        <p>¡Describa su proyecto o su problema!</p>`,
+    },
+  };
+
   /* ---------------- Éléments DOM ---------------- */
 
   const chatEl = document.getElementById("chat");
@@ -39,6 +107,9 @@
   const regionEl = document.getElementById("region");
   const cityEl = document.getElementById("city");
   const ttsToggle = document.getElementById("ttsToggle");
+  const langEl = document.getElementById("lang");
+  const taglineEl = document.getElementById("tagline");
+  const welcomeEl = document.getElementById("welcome");
 
   /* ---------------- État ---------------- */
 
@@ -46,6 +117,36 @@
   let pendingFiles = []; // {name, mediaType, base64, isImage}
   let busy = false;
   let ttsEnabled = false;
+
+  /* ---------------- Choix de langue ---------------- */
+
+  function currentLang() {
+    return LANGS[langEl.value] || LANGS.fr;
+  }
+
+  function applyLanguage() {
+    const L = currentLang();
+    document.documentElement.lang = langEl.value;
+    taglineEl.textContent = L.tagline;
+    cityEl.placeholder = L.cityPlaceholder;
+    inputEl.placeholder = L.inputPlaceholder;
+    ttsToggle.textContent = ttsEnabled ? L.voiceOn : L.voiceOff;
+    // Le message d'accueil n'est retraduit que s'il est encore le premier et seul message
+    if (welcomeEl && chatEl.querySelectorAll(".message").length === 1) {
+      welcomeEl.innerHTML = L.welcome;
+    }
+    if (recognition) recognition.lang = L.speech;
+  }
+
+  langEl.addEventListener("change", () => {
+    localStorage.setItem("eci-lang", langEl.value);
+    applyLanguage();
+  });
+
+  function restoreLanguage() {
+    const saved = localStorage.getItem("eci-lang");
+    if (saved && LANGS[saved]) langEl.value = saved;
+  }
 
   /* ---------------- Juridiction ---------------- */
 
@@ -248,7 +349,7 @@
 
   if (SpeechRecognition) {
     recognition = new SpeechRecognition();
-    recognition.lang = "fr-CA";
+    recognition.lang = currentLang().speech;
     recognition.interimResults = true;
     recognition.continuous = true;
 
@@ -271,7 +372,7 @@
     };
     recognition.onerror = (e) => {
       if (e.error === "not-allowed") {
-        alert("Accès au micro refusé. Autorisez le micro dans votre navigateur.");
+        alert(currentLang().micDenied);
       }
     };
   } else {
@@ -280,12 +381,13 @@
 
   micBtn.addEventListener("click", () => {
     if (!recognition) {
-      alert("La reconnaissance vocale n'est pas supportée par ce navigateur. Utilisez Chrome ou Edge.");
+      alert(currentLang().micUnsupported);
       return;
     }
     if (recording) {
       recognition.stop();
     } else {
+      recognition.lang = currentLang().speech;
       recording = true;
       micBtn.classList.add("recording");
       micBtn.textContent = "⏹";
@@ -297,8 +399,9 @@
 
   ttsToggle.addEventListener("click", () => {
     ttsEnabled = !ttsEnabled;
+    const L = currentLang();
     ttsToggle.classList.toggle("on", ttsEnabled);
-    ttsToggle.textContent = ttsEnabled ? "🔊 Voix" : "🔇 Voix";
+    ttsToggle.textContent = ttsEnabled ? L.voiceOn : L.voiceOff;
     ttsToggle.setAttribute("aria-pressed", String(ttsEnabled));
     if (!ttsEnabled) speechSynthesis.cancel();
   });
@@ -306,19 +409,21 @@
   function speak(text) {
     if (!ttsEnabled || !("speechSynthesis" in window)) return;
     speechSynthesis.cancel();
+    const L = currentLang();
     // Retirer le markdown pour la lecture
     const plain = text
-      .replace(/```[\s\S]*?```/g, " (bloc de code) ")
+      .replace(/```[\s\S]*?```/g, L.codeBlock)
       .replace(/[#*_`>|]/g, "")
       .replace(/\n+/g, ". ");
     const utterance = new SpeechSynthesisUtterance(plain);
     const voices = speechSynthesis.getVoices();
-    const frVoice =
-      voices.find((v) => v.lang === "fr-CA") ||
-      voices.find((v) => v.lang.startsWith("fr")) ||
+    const base = L.speech.slice(0, 2); // fr / en / es
+    const voice =
+      voices.find((v) => v.lang === L.speech || v.lang === L.speech.replace("-", "_")) ||
+      voices.find((v) => v.lang.startsWith(base)) ||
       null;
-    if (frVoice) utterance.voice = frVoice;
-    utterance.lang = frVoice ? frVoice.lang : "fr-CA";
+    if (voice) utterance.voice = voice;
+    utterance.lang = voice ? voice.lang : L.speech;
     utterance.rate = 1.05;
     speechSynthesis.speak(utterance);
   }
@@ -339,6 +444,9 @@
     }
   });
   sendBtn.addEventListener("click", sendMessage);
+
+  restoreLanguage();
+  applyLanguage();
 
   async function sendMessage() {
     const text = inputEl.value.trim();
@@ -372,7 +480,7 @@
         });
       }
     }
-    content.push({ type: "text", text: text || "Analyse les fichiers joints et identifie les problèmes." });
+    content.push({ type: "text", text: text || currentLang().analyzeFiles });
     history.push({ role: "user", content });
 
     const bubble = addAssistantBubble();
@@ -383,7 +491,7 @@
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, location: getLocation() }),
+        body: JSON.stringify({ messages: history, location: getLocation(), language: langEl.value }),
       });
 
       if (!response.ok || !response.body) {
@@ -420,7 +528,7 @@
         }
       }
     } catch (err) {
-      assistantText = assistantText || "⚠️ Impossible de contacter le serveur : " + err.message;
+      assistantText = assistantText || "⚠️ " + currentLang().serverUnreachable + err.message;
       bubble.innerHTML = renderMarkdown(assistantText);
     } finally {
       bubble.classList.remove("typing");

@@ -2,10 +2,11 @@
 
 Application web : un agent IA **expert en construction dans tous les corps de métier**, propulsé par l'API Anthropic (Claude), qui s'adapte automatiquement au **code de construction de votre province canadienne ou de votre état américain**.
 
-**🌐 En production : https://expert-construction-ia.vercel.app** (ajoutez `ANTHROPIC_API_KEY` dans Vercel → Settings → Environment Variables, puis redéployez, pour activer l'agent)
+**🌐 En production : https://expert-construction-dusky.vercel.app** (projet Vercel `expert-construction`, connecté à ce dépôt GitHub — chaque fusion dans `main` déclenche un déploiement automatique; la clé `ANTHROPIC_API_KEY` est configurée dans Settings → Environment Variables)
 
 ## Fonctionnalités
 
+- 🌍 **Trilingue** : français, anglais, espagnol — le sélecteur de langue adapte l'interface, les réponses de l'agent, la dictée vocale et la voix de lecture.
 - 👷 **Expert tous métiers** : charpenterie-menuiserie, planchers, gypse/drywall, toiture, revêtement extérieur, plomberie, électricité, gaz, CVC, fondations, isolation, maçonnerie, etc.
 - 📜 **Codes adaptés à la juridiction** : Code national du bâtiment + variations provinciales (Code de construction du Québec, Ontario Building Code, BC Building Code…), codes ICC (IBC/IRC/IPC/NEC…) selon l'état américain. L'agent vérifie les exigences en vigueur par recherche web au besoin.
 - 🎤 **Reconnaissance vocale** (speech-to-text) : dictez vos questions (fr-CA, navigateurs Chrome/Edge).

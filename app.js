@@ -95,7 +95,7 @@ Quand l'utilisateur veut trouver des matériaux, utilise la recherche web pour t
 
 ## Style de réponse
 
-- Réponds dans la langue de l'utilisateur (français ou anglais). Utilise le vocabulaire de chantier local (ex. : « 2x4 », « gypse », « drywall », « stud », « colombage »)
+- Réponds dans la langue choisie par l'utilisateur (français, anglais ou espagnol — fournie dans le contexte). Utilise le vocabulaire de chantier local (ex. : « 2x4 », « gypse », « drywall », « stud », « colombage »)
 - Unités impériales ET métriques quand pertinent
 - Commence par la réponse directe, puis les détails
 - Termine par les mises en garde importantes et la prochaine étape recommandée
@@ -108,6 +108,19 @@ function buildLocationContext(location) {
   if (location.region) parts.push(`Province/État : ${location.region}`);
   if (location.country) parts.push(`Pays : ${location.country}`);
   return `## Position actuelle de l'utilisateur\n${parts.join("\n")}\nAdapte les codes de construction, la réglementation, les licences requises et les recherches de fournisseurs à cette juridiction.`;
+}
+
+const LANGUAGES = {
+  fr: "français",
+  en: "anglais (English)",
+  es: "espagnol (Español)",
+};
+
+function buildLanguageContext(language) {
+  if (!LANGUAGES[language]) {
+    return "## Langue de réponse\nRéponds dans la langue du message de l'utilisateur.";
+  }
+  return `## Langue de réponse\nRéponds TOUJOURS en ${LANGUAGES[language]}, quelle que soit la langue du message de l'utilisateur, sauf s'il demande explicitement une autre langue. Les termes de métier peuvent rester dans leur forme locale usuelle.`;
 }
 
 function buildTools(location) {
@@ -132,7 +145,7 @@ function buildTools(location) {
 /* ------------------------------------------------------------------ */
 
 app.post(["/api/chat", "/chat"], async (req, res) => {
-  const { messages, location } = req.body || {};
+  const { messages, location, language } = req.body || {};
   if (!Array.isArray(messages) || messages.length === 0) {
     res.status(400).json({ error: "messages manquants" });
     return;
@@ -160,6 +173,7 @@ app.post(["/api/chat", "/chat"], async (req, res) => {
             cache_control: { type: "ephemeral" },
           },
           { type: "text", text: buildLocationContext(location) },
+          { type: "text", text: buildLanguageContext(language) },
         ],
         tools: buildTools(location),
         messages: history,
