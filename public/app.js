@@ -484,8 +484,15 @@
     history.push({ role: "user", content });
 
     const bubble = addAssistantBubble();
-    let assistantText = "";
+    let assistantText = ""; // texte réel du modèle (seul lui entre dans l'historique)
+    let errorText = "";     // erreurs/refus : affichés, mais JAMAIS mémorisés
     let statusEl = null;
+
+    const renderBubble = () => {
+      const combined =
+        assistantText + (errorText ? (assistantText ? "\n\n" : "") + "⚠️ " + errorText : "");
+      bubble.innerHTML = renderMarkdown(combined);
+    };
 
     try {
       const response = await fetch("/api/chat", {
@@ -516,20 +523,20 @@
 
           if (event.type === "text") {
             assistantText += event.text;
-            bubble.innerHTML = renderMarkdown(assistantText);
+            renderBubble();
             scrollToBottom();
           } else if (event.type === "status") {
             if (statusEl) statusEl.remove();
             statusEl = addStatus(event.text);
           } else if (event.type === "error") {
-            assistantText += (assistantText ? "\n\n" : "") + "⚠️ " + event.text;
-            bubble.innerHTML = renderMarkdown(assistantText);
+            errorText = event.text;
+            renderBubble();
           }
         }
       }
     } catch (err) {
-      assistantText = assistantText || "⚠️ " + currentLang().serverUnreachable + err.message;
-      bubble.innerHTML = renderMarkdown(assistantText);
+      if (!errorText) errorText = currentLang().serverUnreachable + err.message;
+      renderBubble();
     } finally {
       bubble.classList.remove("typing");
       if (statusEl) statusEl.remove();
@@ -537,7 +544,9 @@
         history.push({ role: "assistant", content: assistantText });
         speak(assistantText);
       } else {
-        history.pop(); // aucune réponse : retirer le tour utilisateur pour pouvoir réessayer
+        // Aucune vraie réponse (erreur ou refus) : retirer le tour utilisateur
+        // pour que l'échec ne contamine pas la suite de la conversation
+        history.pop();
       }
       busy = false;
       sendBtn.disabled = false;
