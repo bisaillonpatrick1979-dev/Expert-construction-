@@ -347,31 +347,58 @@
   let recognition = null;
   let recording = false;
 
+  // Sur Chrome Android, le mode continu répète les résultats finaux (mots
+  // doublés/triplés). On désactive le mode continu sur mobile et on relance
+  // la reconnaissance automatiquement tant que l'utilisateur n'arrête pas.
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+
   if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.lang = currentLang().speech;
     recognition.interimResults = true;
-    recognition.continuous = true;
+    recognition.continuous = !isMobile;
 
     let baseText = "";
-    recognition.onstart = () => { baseText = inputEl.value ? inputEl.value + " " : ""; };
+    let finalText = "";
+    recognition.onstart = () => {
+      baseText = inputEl.value ? inputEl.value + " " : "";
+      finalText = "";
+    };
     recognition.onresult = (event) => {
-      let finalText = "";
       let interim = "";
-      for (const result of event.results) {
-        if (result.isFinal) finalText += result[0].transcript + " ";
-        else interim += result[0].transcript;
+      // Ne parcourir que les nouveaux résultats (resultIndex) au lieu de tout
+      // relire à chaque événement — c'était la cause principale du doublage.
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript;
+        if (result.isFinal) {
+          // Garde anti-doublon : certains navigateurs réémettent le même
+          // résultat final plusieurs fois.
+          const trimmed = transcript.trim();
+          if (trimmed && !finalText.trim().endsWith(trimmed)) {
+            finalText += transcript + " ";
+          }
+        } else {
+          interim += transcript;
+        }
       }
-      inputEl.value = (baseText + finalText + interim).trimStart();
+      inputEl.value = (baseText + finalText + interim).replace(/\s{2,}/g, " ").trimStart();
       autoGrow();
     };
     recognition.onend = () => {
+      // En mode non continu (mobile), relancer tant que l'utilisateur enregistre
+      if (recording && !recognition.continuous) {
+        baseText = inputEl.value ? inputEl.value + " " : "";
+        finalText = "";
+        try { recognition.start(); return; } catch { /* fin normale */ }
+      }
       recording = false;
       micBtn.classList.remove("recording");
       micBtn.textContent = "🎤";
     };
     recognition.onerror = (e) => {
       if (e.error === "not-allowed") {
+        recording = false;
         alert(currentLang().micDenied);
       }
     };
@@ -385,7 +412,10 @@
       return;
     }
     if (recording) {
+      recording = false; // avant stop() pour empêcher la relance automatique
       recognition.stop();
+      micBtn.classList.remove("recording");
+      micBtn.textContent = "🎤";
     } else {
       recognition.lang = currentLang().speech;
       recording = true;
@@ -406,29 +436,70 @@
     if (!ttsEnabled) speechSynthesis.cancel();
   });
 
+  // Nettoie le texte pour la lecture : markdown, émojis, symboles décoratifs
+  function textForSpeech(text, L) {
+    return text
+      .replace(/```[\s\S]*?```/g, L.codeBlock)
+      // Émojis et pictogrammes (🛒 📷 ⚠️ 👷 …) + drapeaux + sélecteurs de variante
+      .replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{FE0F}\u{200D}\u{20E3}]/gu, " ")
+      // Symboles markdown et décoratifs
+      .replace(/[#*_`>|•·–—✕✓✔✗]/g, " ")
+      // Tirets de listes en début de ligne
+      .replace(/^\s*-\s+/gm, "")
+      .replace(/\n+/g, ". ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/(\.\s*){2,}/g, ". ")
+      .trim();
+  }
+
+  // Choisit la voix la plus naturelle disponible dans la langue demandée.
+  // Les voix « Natural/Neural » (Edge), « Google » (Chrome) et
+  // « Enhanced/Premium » (iOS/macOS) sonnent bien mieux que les voix
+  // système par défaut, souvent robotiques.
+  function pickVoice(speechLang) {
+    const voices = speechSynthesis.getVoices();
+    const wanted = speechLang.toLowerCase();
+    const base = wanted.slice(0, 2);
+    const candidates = voices.filter((v) =>
+      v.lang.replace("_", "-").toLowerCase().startsWith(base)
+    );
+    const score = (v) => {
+      const name = v.name.toLowerCase();
+      const lang = v.lang.replace("_", "-").toLowerCase();
+      let s = 0;
+      if (/natural|neural/.test(name)) s += 10; // Microsoft Edge (très naturelles)
+      if (name.includes("google")) s += 8;      // Chrome
+      if (/enhanced|premium|siri/.test(name)) s += 8; // iOS / macOS
+      if (name.includes("online")) s += 4;
+      if (!v.localService) s += 3;              // voix en ligne = meilleure qualité
+      if (lang === wanted) s += 2;              // dialecte exact (ex. fr-CA)
+      if (v.default) s += 1;
+      return s;
+    };
+    return candidates.sort((a, b) => score(b) - score(a))[0] || null;
+  }
+
   function speak(text) {
     if (!ttsEnabled || !("speechSynthesis" in window)) return;
     speechSynthesis.cancel();
     const L = currentLang();
-    // Retirer le markdown pour la lecture
-    const plain = text
-      .replace(/```[\s\S]*?```/g, L.codeBlock)
-      .replace(/[#*_`>|]/g, "")
-      .replace(/\n+/g, ". ");
+    const plain = textForSpeech(text, L);
+    if (!plain) return;
     const utterance = new SpeechSynthesisUtterance(plain);
-    const voices = speechSynthesis.getVoices();
-    const base = L.speech.slice(0, 2); // fr / en / es
-    const voice =
-      voices.find((v) => v.lang === L.speech || v.lang === L.speech.replace("-", "_")) ||
-      voices.find((v) => v.lang.startsWith(base)) ||
-      null;
+    const voice = pickVoice(L.speech);
     if (voice) utterance.voice = voice;
     utterance.lang = voice ? voice.lang : L.speech;
-    utterance.rate = 1.05;
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
     speechSynthesis.speak(utterance);
   }
   // Certains navigateurs chargent les voix en différé
-  if ("speechSynthesis" in window) speechSynthesis.getVoices();
+  if ("speechSynthesis" in window) {
+    speechSynthesis.getVoices();
+    if (typeof speechSynthesis.onvoiceschanged !== "undefined") {
+      speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+    }
+  }
 
   /* ---------------- Envoi ---------------- */
 
